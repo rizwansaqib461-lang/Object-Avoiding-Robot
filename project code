@@ -1,0 +1,154 @@
+// OBSTACLE AVOIDING ROBOT CODE
+
+#include <NewPing.h>
+#include <Servo.h>
+
+#define TRIG_PIN A0
+#define ECHO_PIN A1
+#define MAX_DISTANCE 200
+NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
+
+Servo myservo;
+
+// MOTOR PINS (Your wiring)
+#define RIGHT_FWD   7
+#define RIGHT_BWD   8
+#define LEFT_FWD   10
+#define LEFT_BWD   11
+#define ENA 6
+#define ENB 5
+
+// Motor speeds (TUNED)
+const int RIGHT_SPEED = 160;   // right side normal
+const int LEFT_SPEED  = 230;   // left side needs more torque
+
+const int TURN_RIGHT_SPEED = 200;
+const int TURN_LEFT_SPEED  = 200;
+
+void setup() {
+  pinMode(RIGHT_FWD, OUTPUT);
+  pinMode(RIGHT_BWD, OUTPUT);
+  pinMode(LEFT_FWD,  OUTPUT);
+  pinMode(LEFT_BWD,  OUTPUT);
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+
+  myservo.attach(9);
+  myservo.write(90);
+  delay(2000);
+
+  analogWrite(ENA, RIGHT_SPEED);
+  analogWrite(ENB, LEFT_SPEED);
+}
+
+void loop() {
+  moveStop();
+  delay(5);
+
+  int dist = readPing();
+
+  if (dist < 32 && dist > 0) {
+    moveBackward();
+    delay(500);
+    moveStop();
+    delay(200);
+
+    int r = lookRight();
+    delay(300);
+    int l = lookLeft();
+    delay(300);
+    myservo.write(90);
+
+    if (r >= l || r > 35) {
+      turnRight();
+    } else {
+      turnLeft();
+    }
+  } else {
+    moveForward();
+  }
+
+  delay(30);
+}
+
+
+// ================= MOVEMENT FUNCTIONS =================
+
+void moveForward() {
+  analogWrite(ENA, RIGHT_SPEED);
+  analogWrite(ENB, LEFT_SPEED);
+
+  digitalWrite(RIGHT_FWD, HIGH);
+  digitalWrite(RIGHT_BWD, LOW);
+
+  digitalWrite(LEFT_FWD, HIGH);
+  digitalWrite(LEFT_BWD, LOW);
+}
+
+void moveBackward() {
+  analogWrite(ENA, RIGHT_SPEED);
+  analogWrite(ENB, LEFT_SPEED);
+
+  digitalWrite(RIGHT_FWD, LOW);
+  digitalWrite(RIGHT_BWD, HIGH);
+
+  digitalWrite(LEFT_FWD, LOW);
+  digitalWrite(LEFT_BWD, HIGH);
+}
+
+void turnRight() {
+  analogWrite(ENA, TURN_RIGHT_SPEED);
+  analogWrite(ENB, TURN_RIGHT_SPEED);
+
+  digitalWrite(RIGHT_FWD, LOW);
+  digitalWrite(RIGHT_BWD, HIGH);
+
+  digitalWrite(LEFT_FWD, HIGH);
+  digitalWrite(LEFT_BWD, LOW);
+
+  delay(550);
+  moveStop();
+}
+
+void turnLeft() {
+  analogWrite(ENA, TURN_LEFT_SPEED);
+  analogWrite(ENB, TURN_LEFT_SPEED);
+
+  digitalWrite(RIGHT_FWD, HIGH);
+  digitalWrite(RIGHT_BWD, LOW);
+
+  digitalWrite(LEFT_FWD, LOW);
+  digitalWrite(LEFT_BWD, HIGH);
+
+  delay(550);
+  moveStop();
+}
+
+void moveStop() {
+  digitalWrite(RIGHT_FWD, LOW);
+  digitalWrite(RIGHT_BWD, LOW);
+  digitalWrite(LEFT_FWD,  LOW);
+  digitalWrite(LEFT_BWD,  LOW);
+}
+
+
+// ================= SENSOR FUNCTIONS =================
+
+int readPing() {
+  delay(40);
+  int cm = sonar.ping_cm();
+  if (cm == 0) cm = 200;
+  return cm;
+}
+
+int lookRight() {
+  myservo.write(30);
+  delay(500);
+  return readPing();
+}
+
+int lookLeft() {
+  myservo.write(150);
+  delay(500);
+  return readPing();
+}
